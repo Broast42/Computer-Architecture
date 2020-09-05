@@ -11,6 +11,11 @@ class CPU:
         self.reg = [0] * 8
         self.pc = 0
         self.running = True
+        self.op = {
+            'HLT': 0b00000001,
+            'LDI': 0b10000010,
+            'PRN': 0b01000111,
+        }
 
     def ram_read(self, mar):
         return self.ram[mar]   
@@ -18,26 +23,29 @@ class CPU:
     def ram_write(self, mar, mdr):
         self.ram[mar] = mdr
 
-    def load(self):
+    def load(self, filename):
         """Load a program into memory."""
 
         address = 0
-
-        # For now, we've just hardcoded a program:
-
-        program = [
-            # From print8.ls8
-            0b10000010, # LDI R0,8
-            0b00000000,
-            0b00001000,
-            0b01000111, # PRN R0
-            0b00000000,
-            0b00000001, # HLT
-        ]
-
-        for instruction in program:
-            self.ram[address] = instruction
-            address += 1
+        #try- open file and loop through its contents
+        try:
+            with open(filename) as f:
+                for i in f:
+                    # split out comments
+                    splited = i.split('#')
+                    # remove white spaces
+                    value = splited[0].strip()
+                    #continue on empty value before comments
+                    if value == '':
+                        continue
+                    #update ram at address with value
+                    self.ram_write(address, int(value, 2))
+                    #increment address
+                    address += 1
+        #handle exception
+        except FileNotFoundError:
+            print(f"{sys.argv[1]} file not found")
+            sys.exit(2)
 
 
     def alu(self, op, reg_a, reg_b):
@@ -45,6 +53,8 @@ class CPU:
 
         if op == "ADD":
             self.reg[reg_a] += self.reg[reg_b]
+        elif op == "MUL":
+            self.reg[reg_a] *= self.reg[reg_b]
         #elif op == "SUB": etc
         else:
             raise Exception("Unsupported ALU operation")
@@ -71,23 +81,21 @@ class CPU:
 
     def run(self):
         """Run the CPU."""
-        #Op codes
-        HLT = 0b00000001
-        LDI = 0b10000010
-        PRN = 0b01000111
-
+        # print(self.ram)
         while self.running is True:
             ir = self.ram[self.pc]
-            if ir == LDI:
+            if ir == self.op['LDI']:
                 reg_num = self.ram_read(self.pc + 1)
                 reg_val = self.ram_read(self.pc +2)
                 self.reg[reg_num] = reg_val
-                self.pc += 3
-            elif ir == PRN:
+                self.pc += (ir >> 6) + 1
+            elif ir == self.op['PRN']:
                 reg_num = self.ram_read(self.pc + 1)
                 print(self.reg[reg_num])
-                self.pc += 2
-            elif ir == HLT:
+                self.pc += (ir >> 6) + 1
+            elif ir == self.op['HLT']:
                 self.running = False
-                self.pc += 1
-        
+                self.pc += (ir >> 6) + 1
+            else:
+                print(f"Unknown instruction {ir}")
+                sys.exit(1)
