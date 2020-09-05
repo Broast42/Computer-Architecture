@@ -15,6 +15,7 @@ class CPU:
             'HLT': 0b00000001,
             'LDI': 0b10000010,
             'PRN': 0b01000111,
+            'MUL': 0b10100010,
         }
 
     def ram_read(self, mar):
@@ -95,6 +96,11 @@ class CPU:
                 self.pc += (ir >> 6) + 1
             elif ir == self.op['HLT']:
                 self.running = False
+                self.pc += (ir >> 6) + 1
+            elif ir == self.op['MUL']:
+                reg_a = self.ram_read(self.pc + 1)
+                reg_b = self.ram_read(self.pc + 2)
+                self.alu('MUL', reg_a, reg_b)
                 self.pc += (ir >> 6) + 1
             else:
                 print(f"Unknown instruction {ir}")
