@@ -19,6 +19,7 @@ class CPU:
             0b01000111: 'PRN',
             0b10100010: 'MUL',
             0b01000101: 'PUSH',
+            0b01000110: 'POP',
         }
         #op table
         self.optable = {}
@@ -26,6 +27,7 @@ class CPU:
         self.optable[0b10000010] = self.handel_ldi
         self.optable[0b01000111] = self.handel_prn
         self.optable[0b01000101] = self.handel_push
+        self.optable[0b01000110] = self.handel_pop
 
     #ram 
     def ram_read(self, mar):
@@ -54,6 +56,17 @@ class CPU:
         self.reg[self.sp] -= 1
         #write value to memory at sp location
         self.ram_write(self.reg[self.sp], value)
+        #increment pc accordingly
+        self.pc += (op >> 6) + 1
+    
+    def handel_pop(self, op, a, b):
+        #write value in memory at sp to given register
+        value = self.ram_read(self.reg[self.sp])
+        self.reg[a] = value
+        #increment sp and pc accordingly
+        self.reg[self.sp] += 1
+        self.pc += (op >> 6) + 1
+        
 
 
     #load function
