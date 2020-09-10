@@ -18,8 +18,11 @@ class CPU:
             0b10000010: "LDI",
             0b01000111: 'PRN',
             0b10100010: 'MUL',
+            0b10100000: 'ADD',
             0b01000101: 'PUSH',
             0b01000110: 'POP',
+            0b01010000: 'CALL',
+            0b00010001: 'RET',
         }
         #op table
         self.optable = {}
@@ -28,6 +31,8 @@ class CPU:
         self.optable[0b01000111] = self.handel_prn
         self.optable[0b01000101] = self.handel_push
         self.optable[0b01000110] = self.handel_pop
+        self.optable[0b01010000] = self.handel_call
+        self.optable[0b00010001] = self.handel_ret
 
     #ram 
     def ram_read(self, mar):
@@ -48,6 +53,7 @@ class CPU:
     def handel_prn(self, op, a, b):
         print(self.reg[a])
         self.pc += (op >> 6) + 1
+
     
     def handel_push(self, op, a, b):
         #grab value in register a
@@ -67,7 +73,15 @@ class CPU:
         self.reg[self.sp] += 1
         self.pc += (op >> 6) + 1
         
+    def handel_call(self, op, a ,b):
+        self.reg[self.sp] -=1
+        self.ram_write(self.reg[self.sp], self.pc + 2)
+        self.pc = self.reg[a]    
 
+    def handel_ret(self, op, a, b):
+        self.pc = self.ram_read(self.reg[self.sp])
+        self.reg[self.sp] += 1
+       
 
     #load function
     def load(self, filename):
