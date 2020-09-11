@@ -276,7 +276,10 @@ class CPU:
             ir = self.ram_read(self.pc)
             reg_a = self.ram_read(self.pc + 1)
             reg_b = self.ram_read(self.pc +2)
-
+            #check if instruction is not in op if not print error and exit
+            if ir not in self.op:
+                print(f"Unknown instruction {ir}")
+                sys.exit(1)
             # self.trace()
             #check if this is an alu instruction
             if (ir >> 5) & 0b00000001 == 1:
