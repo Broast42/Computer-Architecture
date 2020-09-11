@@ -32,6 +32,7 @@ class CPU:
             0b01010110: 'JNE',
             0b10000011: 'LD',
             0b01001000: 'PRA',
+            0b10000100: 'ST',
             #alu instructions
             0b10101000: 'ADD',
             0b10100000: 'AND',
@@ -68,6 +69,7 @@ class CPU:
         self.optable[0b01010110] = self.handel_jne
         self.optable[0b10000011] = self.handel_ld
         self.optable[0b01001000] = self.handel_pra
+        self.optable[0b10000100] = self.handel_st
 
 
     #ram 
@@ -90,7 +92,6 @@ class CPU:
         print(self.reg[a])
         self.pc += (op >> 6) + 1
 
-    
     def handel_push(self, op, a, b):
         #grab value in register a
         value = self.reg[a]
@@ -170,6 +171,10 @@ class CPU:
         print(chr(self.reg[a]))
         #print(self.reg[a])
         self.pc += (op >> 6) + 1
+    
+    def handel_st(self, op, a, b):
+        self.ram_write(self.reg[a],self.reg[b])
+        
 
     #load function
     def load(self, filename):
@@ -276,11 +281,15 @@ class CPU:
             ir = self.ram_read(self.pc)
             reg_a = self.ram_read(self.pc + 1)
             reg_b = self.ram_read(self.pc +2)
+            
             #check if instruction is not in op if not print error and exit
             if ir not in self.op:
                 print(f"Unknown instruction {ir}")
                 sys.exit(1)
+            
+            # trace for debugging un-comment to test    
             # self.trace()
+            
             #check if this is an alu instruction
             if (ir >> 5) & 0b00000001 == 1:
                 self.alu(self.op[ir], reg_a, reg_b)
@@ -290,25 +299,4 @@ class CPU:
                 #pass in reg a and b regardless of need
                 self.optable[ir](ir, reg_a, reg_b)
             
-            ### Original if else code ###
-            # ir = self.ram_read(self.pc)
-            # if ir == self.op['LDI']:
-            #     reg_num = self.ram_read(self.pc + 1)
-            #     reg_val = self.ram_read(self.pc +2)
-            #     self.reg[reg_num] = reg_val
-            #     self.pc += (ir >> 6) + 1
-            # elif ir == self.op['PRN']:
-            #     reg_num = self.ram_read(self.pc + 1)
-            #     print(self.reg[reg_num])
-            #     self.pc += (ir >> 6) + 1
-            # elif ir == self.op['HLT']:
-            #     self.running = False
-            #     self.pc += (ir >> 6) + 1
-            # elif ir == self.op['MUL']:
-            #     reg_a = self.ram_read(self.pc + 1)
-            #     reg_b = self.ram_read(self.pc + 2)
-            #     self.alu('MUL', reg_a, reg_b)
-            #     self.pc += (ir >> 6) + 1
-            # else:
-            #     print(f"Unknown instruction {ir}")
-            #     sys.exit(1)
+            
