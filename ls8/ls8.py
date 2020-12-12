@@ -7,5 +7,8 @@ from cpu import *
 
 cpu = CPU()
 
-cpu.load()
+if len(sys.argv) != 2:
+    print("Usage: example.py filename")
+    sys.exit(3)
+cpu.load(sys.argv[1])
 cpu.run()
