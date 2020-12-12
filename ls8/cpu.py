@@ -9,10 +9,14 @@ class CPU:
         """Construct a new CPU."""
         self.pc = 0
         self.sp = 7
+        self.ins = 6
+        self.im = 5
         self.fl = 0b00000000
         self.ram = [0] * 256
         self.reg = [0] * 8
         self.reg[self.sp] = 244
+        self.reg[self.ins] = 0b00000000
+        self.reg[self.im] = 0b00000000
         self.running = True
         self.op = {
             0b00000000: 'NOP',
@@ -32,6 +36,8 @@ class CPU:
             0b01010110: 'JNE',
             0b10000011: 'LD',
             0b01001000: 'PRA',
+            0b10000100: 'ST',
+            0b01010010: 'INT',
             #alu instructions
             0b10101000: 'ADD',
             0b10100000: 'AND',
@@ -68,6 +74,8 @@ class CPU:
         self.optable[0b01010110] = self.handel_jne
         self.optable[0b10000011] = self.handel_ld
         self.optable[0b01001000] = self.handel_pra
+        self.optable[0b10000100] = self.handel_st
+        self.optable[0b01010010] = self.handel_int
 
 
     #ram 
@@ -90,7 +98,6 @@ class CPU:
         print(self.reg[a])
         self.pc += (op >> 6) + 1
 
-    
     def handel_push(self, op, a, b):
         #grab value in register a
         value = self.reg[a]
@@ -170,6 +177,18 @@ class CPU:
         print(chr(self.reg[a]))
         #print(self.reg[a])
         self.pc += (op >> 6) + 1
+    
+    def handel_st(self, op, a, b):
+        self.ram_write(self.reg[a],self.reg[b])
+        
+    def handel_int(self, op, a, b):
+        #make nth bit (b) in is register a 1
+        #take a 8bit binary nimber with bit 0 set to 1 and shift it left by b - 1
+        # subtract 1 because if b is 1 we want just first bit "bit 0" to flip 
+        #if b is 2 we want second bit "bit 1" to flip so shift by 1
+        switched_bit = 0b000000001 << b - 1
+        #add the shifted number to the is reg and set im reg to that value
+        self.ins += switched_bit
 
     #load function
     def load(self, filename):
@@ -276,8 +295,15 @@ class CPU:
             ir = self.ram_read(self.pc)
             reg_a = self.ram_read(self.pc + 1)
             reg_b = self.ram_read(self.pc +2)
-
+            
+            #check if instruction is not in op if not print error and exit
+            if ir not in self.op:
+                print(f"Unknown instruction {ir}")
+                sys.exit(1)
+            
+            # trace for debugging un-comment to test    
             # self.trace()
+            
             #check if this is an alu instruction
             if (ir >> 5) & 0b00000001 == 1:
                 self.alu(self.op[ir], reg_a, reg_b)
@@ -287,25 +313,4 @@ class CPU:
                 #pass in reg a and b regardless of need
                 self.optable[ir](ir, reg_a, reg_b)
             
-            ### Original if else code ###
-            # ir = self.ram_read(self.pc)
-            # if ir == self.op['LDI']:
-            #     reg_num = self.ram_read(self.pc + 1)
-            #     reg_val = self.ram_read(self.pc +2)
-            #     self.reg[reg_num] = reg_val
-            #     self.pc += (ir >> 6) + 1
-            # elif ir == self.op['PRN']:
-            #     reg_num = self.ram_read(self.pc + 1)
-            #     print(self.reg[reg_num])
-            #     self.pc += (ir >> 6) + 1
-            # elif ir == self.op['HLT']:
-            #     self.running = False
-            #     self.pc += (ir >> 6) + 1
-            # elif ir == self.op['MUL']:
-            #     reg_a = self.ram_read(self.pc + 1)
-            #     reg_b = self.ram_read(self.pc + 2)
-            #     self.alu('MUL', reg_a, reg_b)
-            #     self.pc += (ir >> 6) + 1
-            # else:
-            #     print(f"Unknown instruction {ir}")
-            #     sys.exit(1)
+            
